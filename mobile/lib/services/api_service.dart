@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
-const String BASE_URL = "http://192.168.0.4:8000";
+import '../config.dart';
+const String BASE_URL = AppConfig.baseUrl;
 
 class ApiService {
   static const _storage = FlutterSecureStorage();
