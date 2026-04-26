@@ -3,7 +3,7 @@ import io
 import base64
 
 
-def generate_qr_base64(session_id: str, base_url: str = "http://192.168.0.4:8000") -> str:
+def generate_qr_base64(session_id: str, base_url: str = "https://securefileshare-production.up.railway.app") -> str:
     url = f"{base_url}/access/{session_id}"
 
     qr = qrcode.QRCode(

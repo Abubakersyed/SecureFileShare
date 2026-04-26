@@ -1,6 +1,4 @@
 class AppConfig {
-  // Change ONLY this IP when you switch networks
-  static const String serverIp = "192.168.0.4";
-  static const int serverPort = 8000;
-  static const String baseUrl = "http://$serverIp:$serverPort";
+  // Railway deployed URL - works from anywhere!
+  static const String baseUrl = "https://securefileshare-production.up.railway.app";
 }
