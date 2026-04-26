@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SecureFileShare — Print Access</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2a2d3e;
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 2rem;
+    }
+
+    .logo-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #6c63ff, #3ecfcf);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .logo-text { font-size: 18px; font-weight: 600; color: #fff; }
+    .logo-sub  { font-size: 12px; color: #888; margin-top: 1px; }
+
+    h2 { font-size: 22px; font-weight: 600; color: #fff; margin-bottom: 0.4rem; }
+    .subtitle { font-size: 14px; color: #888; margin-bottom: 2rem; }
+
+    label { font-size: 13px; color: #aaa; display: block; margin-bottom: 6px; }
+
+    input[type="text"] {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2a2d3e;
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+      transition: border 0.2s;
+      letter-spacing: 0.05em;
+    }
+
+    input[type="text"]:focus { border-color: #6c63ff; }
+
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-top: 1rem;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: linear-gradient(135deg, #6c63ff, #3ecfcf); color: #fff; }
+    .btn-print   { background: #22c55e; color: #fff; }
+    .btn-cancel  { background: #ef4444; color: #fff; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .file-info {
+      display: none;
+      background: #0f1117;
+      border: 1px solid #2a2d3e;
+      border-radius: 12px;
+      padding: 1.2rem;
+      margin-top: 1.5rem;
+    }
+
+    .file-info.show { display: block; }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 6px 0;
+      border-bottom: 1px solid #1e2130;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: #888; }
+    .info-value { color: #e0e0e0; font-weight: 500; }
+
+    .timer {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 13px;
+      color: #f59e0b;
+    }
+
+    .actions { margin-top: 1.5rem; display: flex; gap: 10px; }
+    .actions .btn { margin-top: 0; }
+
+    .status-msg {
+      margin-top: 1rem;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+    }
+    .status-msg.show { display: block; }
+    .status-msg.error   { background: #2d1a1a; color: #f87171; border: 1px solid #7f1d1d; }
+    .status-msg.success { background: #1a2d1a; color: #86efac; border: 1px solid #14532d; }
+    .status-msg.info    { background: #1a1a2d; color: #a5b4fc; border: 1px solid #312e81; }
+
+    .deleted-banner {
+      text-align: center;
+      padding: 2rem;
+      display: none;
+    }
+    .deleted-banner.show { display: block; }
+    .deleted-banner .icon { font-size: 48px; margin-bottom: 1rem; }
+    .deleted-banner p { color: #888; font-size: 14px; }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer {
+      margin-top: 2rem;
+      font-size: 12px;
+      color: #444;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">🔒</div>
+    <div>
+      <div class="logo-text">SecureFileShare</div>
+      <div class="logo-sub">Print Access Portal</div>
+    </div>
+  </div>
+
+  <!-- Step 1: Enter token -->
+  <div id="step-token">
+    <h2>Access a File</h2>
+    <p class="subtitle">Enter the session token provided by the sender.</p>
+    <label for="tokenInput">Session Token</label>
+    <input type="text" id="tokenInput" placeholder="e.g. 3f9a2c1d-..." />
+    <button class="btn btn-primary" onclick="fetchFileInfo()" id="accessBtn">Access File</button>
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
+
+  <!-- Step 2: File info + download/print -->
+  <div id="step-file" style="display:none;">
+    <h2>File Ready</h2>
+    <p class="subtitle">Review the file details before downloading.</p>
+
+    <div class="file-info show" id="fileInfo">
+      <div class="info-row">
+        <span class="info-label">Filename</span>
+        <span class="info-value" id="infoName">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">File size</span>
+        <span class="info-value" id="infoSize">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Expires at</span>
+        <span class="info-value" id="infoExpiry">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Auto-delete</span>
+        <span class="info-value" id="infoTTL">—</span>
+      </div>
+    </div>
+
+    <div class="timer" id="timerDisplay"></div>
+
+    <div class="actions">
+      <button class="btn btn-print" onclick="downloadAndPrint()" id="printBtn">🖨 Print File</button>
+
+    <div class="status-msg" id="statusMsg2"></div>
+
+    <p style="font-size:12px; color:#555; margin-top:1rem; text-align:center;">
+      ⚠️ File is deleted immediately after download. This is a one-time access link.
+    </p>
+  </div>
+
+  <!-- Step 3: Deleted confirmation -->
+  <div class="deleted-banner" id="step-deleted">
+    <div class="icon">✅</div>
+    <h2 style="color:#86efac; margin-bottom:0.5rem;">File Delivered</h2>
+    <p>The file has been downloaded and permanently deleted from the server.<br/>No copies remain.</p>
+  </div>
+</div>
+
+<footer>SecureFileShare · Zero permanent storage · AES-256 encrypted</footer>
+
+<script>
+  const API = "";   // empty = same origin; change to "http://localhost:8000" if running separately
+  let sessionId = "";
+  let countdownInterval = null;
+
+  // Auto-read session token from URL path: /access/<session_id>
+  window.addEventListener("DOMContentLoaded", () => {
+    const parts = window.location.pathname.split("/");
+    const idx = parts.indexOf("access");
+    if (idx !== -1 && parts[idx + 1]) {
+      document.getElementById("tokenInput").value = parts[idx + 1];
+      fetchFileInfo();
+    }
+  });
+
+  function showStatus(id, message, type) {
+    const el = document.getElementById(id);
+    el.textContent = message;
+    el.className = `status-msg show ${type}`;
+  }
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  function startCountdown(expiresAt) {
+    const display = document.getElementById("timerDisplay");
+    // Parse as UTC by appending Z if not present
+    const expiryDate = new Date(expiresAt.endsWith('Z') ? expiresAt : expiresAt + 'Z');
+    countdownInterval = setInterval(() => {
+      const diff = expiryDate - new Date();
+      if (diff <= 0) {
+        clearInterval(countdownInterval);
+        display.textContent = "⏱ Session expired";
+        document.getElementById("printBtn").disabled = true;
+        return;
+      }
+      const mins = Math.floor(diff / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
+      display.textContent = `⏱ Auto-deletes in ${mins}m ${secs}s`;
+    }, 1000);
+  }
+
+  async function fetchFileInfo() {
+    const token = document.getElementById("tokenInput").value.trim();
+    if (!token) { showStatus("statusMsg", "Please enter a session token.", "error"); return; }
+
+    const btn = document.getElementById("accessBtn");
+    btn.innerHTML = '<span class="spinner"></span>Checking...';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(`${API}/files/info/${token}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        showStatus("statusMsg", data.detail || "Session not found or expired.", "error");
+        btn.innerHTML = "Access File";
+        btn.disabled = false;
+        return;
+      }
+
+      sessionId = token;
+      document.getElementById("infoName").textContent   = data.filename;
+      document.getElementById("infoSize").textContent   = formatBytes(data.file_size);
+      document.getElementById("infoExpiry").textContent = new Date(data.expires_at).toLocaleTimeString();
+      document.getElementById("infoTTL").textContent    = `${data.ttl_minutes} minutes`;
+
+      document.getElementById("step-token").style.display = "none";
+      document.getElementById("step-file").style.display  = "block";
+      startCountdown(data.expires_at);
+
+    } catch (e) {
+      showStatus("statusMsg", "Could not connect to server.", "error");
+      btn.innerHTML = "Access File";
+      btn.disabled = false;
+    }
+  }
+  async function downloadAndPrint() {
+    const btn = document.getElementById("printBtn");
+    btn.innerHTML = '<span class="spinner"></span>Fetching...';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(`${API}/files/download/${sessionId}`);
+      if (!res.ok) {
+        const data = await res.json();
+        showStatus("statusMsg2", data.detail || "Access failed.", "error");
+        btn.innerHTML = "🖨 Print File";
+        btn.disabled = false;
+        return;
+      }
+
+      const disposition = res.headers.get("Content-Disposition") || "";
+      const nameMatch = disposition.match(/filename="(.+?)"/);
+      const filename = nameMatch ? nameMatch[1] : "file";
+      const ext = filename.split(".").pop().toLowerCase();
+
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const iframe = document.createElement("iframe");
+      iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;";
+
+      if (["pdf"].includes(ext)) {
+        iframe.src = blobUrl;
+      } else if (["png","jpg","jpeg","gif","webp","bmp"].includes(ext)) {
+        iframe.srcdoc = `<html><body style="margin:0;display:flex;justify-content:center;align-items:center;height:100vh;">
+          <img src="${blobUrl}" style="max-width:100%;max-height:100vh;object-fit:contain;" onload="window.print()"/>
+          </body></html>`;
+      } else {
+        iframe.srcdoc = `<html><body style="font-family:sans-serif;padding:40px;">
+          <h2>📄 ${filename}</h2>
+          <p>File received securely. Please use a dedicated app to open this file type.</p>
+          </body></html>`;
+      }
+
+      document.body.appendChild(iframe);
+
+      iframe.onload = () => {
+        try {
+          iframe.contentWindow.focus();
+          if (!["png","jpg","jpeg","gif","webp","bmp"].includes(ext)) {
+            iframe.contentWindow.print();
+          }
+        } catch(e) {}
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+          document.body.removeChild(iframe);
+        }, 30000);
+      };
+
+      clearInterval(countdownInterval);
+      document.getElementById("step-file").style.display = "none";
+      document.getElementById("step-deleted").classList.add("show");
+
+    } catch (e) {
+      showStatus("statusMsg2", "Failed. Server may be unreachable.", "error");
+      btn.innerHTML = "🖨 Print File";
+      btn.disabled = false;
+    }
+  }
+
+ 
+</script>
+
+</body>
+</html>
