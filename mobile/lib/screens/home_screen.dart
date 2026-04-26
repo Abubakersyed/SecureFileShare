@@ -1,3 +1,4 @@
+import 'settings_screen.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -82,8 +83,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.logout, color: Color(0xFF888888)), onPressed: _logout),
-        ],
+  IconButton(
+    icon: const Icon(Icons.settings, color: Color(0xFF888888)),
+    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+  ),
+  IconButton(icon: const Icon(Icons.logout, color: Color(0xFF888888)), onPressed: _logout),
+],
       ),
       body: SafeArea(
         child: Padding(

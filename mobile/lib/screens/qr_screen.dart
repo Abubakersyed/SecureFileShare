@@ -1,9 +1,10 @@
+import '../config.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:http/http.dart' as http;
-import '../config.dart';
+
 
 class QrScreen extends StatefulWidget {
   final Map<String, dynamic> uploadResponse;
@@ -25,27 +26,36 @@ class _QrScreenState extends State<QrScreen> {
   Timer? _pollTimer;
 
   @override
-  void initState() {
-    super.initState();
-    _sessionId  = widget.uploadResponse["session_id"] as String;
-    _filename   = widget.uploadResponse["filename"]   as String;
-    _ttlMinutes = widget.uploadResponse["ttl_minutes"] as int;
+  @override
+void initState() {
+  super.initState();
+  _sessionId  = widget.uploadResponse["session_id"] as String;
+  _filename   = widget.uploadResponse["filename"]   as String;
+  _ttlMinutes = widget.uploadResponse["ttl_minutes"] as int;
+  final rawExpiry = widget.uploadResponse["expires_at"] as String;
+  _expiresAt = DateTime.parse(rawExpiry.endsWith('Z') ? rawExpiry : rawExpiry + 'Z').toLocal();
+  _qrData = widget.uploadResponse["access_url"] != null
+      ? "http://192.168.0.4:8000${widget.uploadResponse["access_url"]}"
+      : "http://192.168.0.4:8000/access/$_sessionId";
+  final now = DateTime.now();
+  _secondsLeft = _expiresAt.difference(now).inSeconds.clamp(0, 9999);
+  _ticker = Stream.periodic(const Duration(seconds: 1), (i) => i);
+  _startPolling();
+  _loadQrData();
+}
 
-    final rawExpiry = widget.uploadResponse["expires_at"] as String;
-    _expiresAt = DateTime.parse(rawExpiry.endsWith('Z') ? rawExpiry : rawExpiry + 'Z').toLocal();
-    _qrData = "${AppConfig.baseUrl}/access/$_sessionId";
-
-    final now = DateTime.now();
-    _secondsLeft = _expiresAt.difference(now).inSeconds.clamp(0, 9999);
-    _ticker = Stream.periodic(const Duration(seconds: 1), (i) => i);
-    _startPolling();
-  }
+Future<void> _loadQrData() async {
+  final baseUrl = await AppConfig.getBaseUrl();
+  setState(() {
+    _qrData = "$baseUrl/access/$_sessionId";
+  });
+}
 
   void _startPolling() {
     _pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       try {
         final res = await http.get(
-          Uri.parse("${AppConfig.baseUrl}/files/info/$_sessionId"),
+          Uri.parse("${await AppConfig.getBaseUrl()}/files/info/$_sessionId"),
         );
         if (res.statusCode == 410 || res.statusCode == 404) {
           timer.cancel();

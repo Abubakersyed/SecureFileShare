@@ -2,14 +2,18 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config.dart';
-const String BASE_URL = AppConfig.baseUrl;
 
 class ApiService {
   static const _storage = FlutterSecureStorage();
 
+  static Future<String> getBaseUrl() async {
+    return await AppConfig.getBaseUrl();
+  }
+
   static Future<Map<String, dynamic>> register(String email, String password) async {
+    final baseUrl = await getBaseUrl();
     final res = await http.post(
-      Uri.parse("$BASE_URL/auth/register"),
+      Uri.parse("$baseUrl/auth/register"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({"email": email, "password": password}),
     );
@@ -17,8 +21,9 @@ class ApiService {
   }
 
   static Future<String?> login(String email, String password) async {
+    final baseUrl = await getBaseUrl();
     final res = await http.post(
-      Uri.parse("$BASE_URL/auth/login"),
+      Uri.parse("$baseUrl/auth/login"),
       headers: {"Content-Type": "application/x-www-form-urlencoded"},
       body: "username=${Uri.encodeComponent(email)}&password=${Uri.encodeComponent(password)}",
     );
@@ -44,10 +49,11 @@ class ApiService {
     required String filename,
     required int ttlMinutes,
   }) async {
+    final baseUrl = await getBaseUrl();
     final token = await getToken();
     if (token == null) return null;
 
-    final request = http.MultipartRequest("POST", Uri.parse("$BASE_URL/files/upload"))
+    final request = http.MultipartRequest("POST", Uri.parse("$baseUrl/files/upload"))
       ..headers["Authorization"] = "Bearer $token"
       ..fields["ttl_minutes"] = ttlMinutes.toString()
       ..files.add(http.MultipartFile.fromBytes("file", bytes, filename: filename));

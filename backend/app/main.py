@@ -1,7 +1,7 @@
-
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import os
 
 from app.models.database import init_db
@@ -24,6 +24,16 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(files.router)
+
+frontend_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend")
+if os.path.exists(frontend_path):
+    app.mount("/static", StaticFiles(directory=frontend_path), name="static")
+
+
+@app.get("/access/{session_id}", include_in_schema=False)
+def serve_access_page(session_id: str):
+    index_path = os.path.join(frontend_path, "index.html")
+    return FileResponse(index_path)
 
 
 @app.on_event("startup")
