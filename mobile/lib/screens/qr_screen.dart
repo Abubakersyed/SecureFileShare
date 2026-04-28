@@ -34,9 +34,7 @@ void initState() {
   _ttlMinutes = widget.uploadResponse["ttl_minutes"] as int;
   final rawExpiry = widget.uploadResponse["expires_at"] as String;
   _expiresAt = DateTime.parse(rawExpiry.endsWith('Z') ? rawExpiry : rawExpiry + 'Z').toLocal();
-  _qrData = widget.uploadResponse["access_url"] != null
-      ? "http://192.168.0.4:8000${widget.uploadResponse["access_url"]}"
-      : "http://192.168.0.4:8000/access/$_sessionId";
+  _qrData = "http://192.168.0.3:8000/access/$_sessionId";
   final now = DateTime.now();
   _secondsLeft = _expiresAt.difference(now).inSeconds.clamp(0, 9999);
   _ticker = Stream.periodic(const Duration(seconds: 1), (i) => i);
